@@ -19,5 +19,5 @@ main = do
     sock <- socket AF_INET Stream 0                            -- create socket
     setSocketOption sock ReuseAddr 1                           -- make socket immediately reusable.
     bind sock (SockAddrInet (toEnum $ read port) iNADDR_ANY)   -- listen on TCP port given by user.
-    let nbThreads = 5
-    listen sock (nbThreads*2)                                  -- queue of 10 connections max
+    let nbThreads = 10
+    listen sock (nbThreads*2)                                  -- queue of 20 connections max
