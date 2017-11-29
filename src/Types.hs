@@ -31,3 +31,19 @@ data ChatRooms = ChatRooms { chatRoomFromId     :: HashTable Int ChatRoom
                            , chatRoomIdFromName :: HashTable String Int
                            , numberOfChatRooms  :: Int
                            }
+
+
+sendResponse :: Handle -> String -> IO ()
+sendResponse hdl resp = do
+    hSetBuffering hdl $ BlockBuffering $ Just (length resp)
+    hPutStr hdl resp
+
+getHostNameNow :: IO String
+getHostNameNow = do
+    weAreInDocker <- doesFileExist "/.dockerenv"
+    host <- if weAreInDocker then getHostByName "dockerhost"
+        else (getHostName >>= getHostByName)
+    return $ show $ fromHostAddress $ head $ hostAddresses host
+
+hlog :: String -> IO ()
+hlog s = putStrLn $ "\n*****************\n" ++ s ++ "\n*****************"
