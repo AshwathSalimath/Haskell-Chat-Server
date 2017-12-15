@@ -46,6 +46,7 @@ type Server = StateT ServerEnvr IO
 maxConnections :: Int
 maxConnections = 150
 
+{-
 sendResponse :: Handle -> String -> IO ()
 sendResponse hdl resp = do
     hSetBuffering hdl $ BlockBuffering $ Just (length resp)
@@ -59,4 +60,5 @@ getHostNameNow = do
     return $ show $ fromHostAddress $ head $ hostAddresses host
 
 hlog :: String -> IO ()
-hlog s = putStrLn $ "\n*****************\n" ++ s ++ "\n*****************"
+hlog s = putStrLn $ "\n*****************\n" ++ s ++ "\n*****************"-}
+
