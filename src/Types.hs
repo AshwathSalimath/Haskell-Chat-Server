@@ -1,20 +1,25 @@
+{-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+
+
 module Types where
 
-import Network.BSD
-import System.IO
-import System.Directory
-import Control.Exception
-import Control.Monad.Fix (fix)
 import Control.Concurrent
-import Data.IP
-import Data.List
-import qualified Data.Maybe as M
-import Data.String.Utils
-import Foreign.Ptr
-import Foreign.C.String
-import Foreign.C.Types
-import Foreign.Marshal.Alloc (mallocBytes, free)
-import qualified Data.HashTable.IO as H
+import Control.Exception hiding (handle)
+import Control.Lens
+import Control.Monad
+import Control.Monad.State
+import Data.Hashable
+import Data.List (delete, isPrefixOf)
+import Data.List.Split (splitOn)
+import Data.Map (Map)
+import qualified Data.Map as Map
+import Data.Maybe (fromJust)
+import Network.Socket
+import Network.BSD
+import System.Exit (exitSuccess)
+import System.Random
+import Semaphore
 
 data User = User
     { _userID :: Int
@@ -45,6 +50,7 @@ type Server = StateT ServerEnvr IO
 
 maxConnections :: Int
 maxConnections = 150
+
 
 {-
 sendResponse :: Handle -> String -> IO ()

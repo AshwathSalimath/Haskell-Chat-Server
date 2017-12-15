@@ -1,8 +1,7 @@
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+module Server where
 
-
-module Client where
 
 import Control.Concurrent
 import Control.Exception hiding (handle)
@@ -21,15 +20,109 @@ import System.Exit (exitSuccess)
 import System.Random
 import Semaphore
 
+data User = User
+    { _userID :: Int
+    , _userNickName :: String
+    , _userConn :: Socket
+    }
 
-{--- Function to respond to "HELO" string
-helo :: Handle -> String -> String -> IO ()
-helo hdl text port = do
-    hostname <- getHostNameNow
-    sendResponse hdl $ "HELO " ++ text ++ "\nIP:" ++ hostname ++ "\nPort:" ++ port ++ "\nStudentID: 17306521"-}
+data Channel = Channel
+    { _channelID :: Int
+    , _channelName :: String
+    , _channelUsers :: [String]
+    }
 
+data ServerEnvr = ServerEnvr
+    { _serverHost :: HostName
+    , _serverPort :: String
+    , _serverSock :: Socket
+    , _serverSem :: Semaphore
+    , _serverChannels :: MVar (Map Int Channel)
+    , _serverUsers :: MVar (Map String User)
+    }
 
+makeLenses ''User
+makeLenses ''Channel
+makeLenses ''ServerEnvr
 
+type Server = StateT ServerEnvr IO
+
+maxConnections :: Int
+maxConnections = 150
+
+startServer :: String -> IO ()
+startServer port =
+    bracketOnError
+        (do
+            addrinfos <- getAddrInfo
+                         (Just (defaultHints {addrFlags = [AI_PASSIVE]}))
+                         Nothing (Just port)
+            let serveraddr = head addrinfos
+            sock <- socket (addrFamily serveraddr) Stream defaultProtocol
+            bind sock (addrAddress serveraddr)
+            listen sock 1
+            return sock)
+
+        (\sock -> do
+            putStrLn "Terminating..."
+            close sock)
+
+        (\sock -> do
+            putStrLn $ "Listening on port " ++ port ++ "..."
+
+            host <- getFQDN
+            sem <- newSemaphore maxConnections
+            channels <- newMVar Map.empty
+            users <- newMVar Map.empty
+
+            let env = ServerEnvr host port sock sem channels users
+            acceptConnections env)
+
+acceptConnections :: ServerEnvr -> IO ()
+acceptConnections env = forever $ do
+    let sock = env ^. serverSock
+        sem  = env ^. serverSem
+
+    accepted <- try (accept sock)
+    case accepted of
+        Left (_ :: IOException) -> exitSuccess
+        Right (conn, _) -> do
+            canAquireSem <- checkSemaphore sem
+            if canAquireSem then
+                void $ forkIO $ void $ runStateT (processRequest conn) env
+            else do
+                void $ send conn "SERVER_BUSY"
+                close conn
+
+processRequest :: Socket -> Server ()
+processRequest conn = forever $ do
+    request <- liftIO $ try (recv conn 4096)
+    case request of
+        Left (_ :: IOException) -> liftIO $ do
+            putStrLn "Client disconnected."
+            exitSuccess
+        Right msg -> do
+            liftIO $ putStrLn $ "RECEIVED REQUEST - " ++ msg
+            handleRequest msg conn
+
+handleRequest :: String -> Socket -> Server ()
+handleRequest msg conn =
+    let msgWords = words msg in
+
+    if "HELO" `isPrefixOf` msg then
+        handleHELO conn (msgWords !! 1)
+    else if "KILL_SERVICE" `isPrefixOf` msg then
+        use serverSock >>= liftIO . close
+    else if "JOIN_CHATROOM" `isPrefixOf` msg then
+        handleJoin conn (parseParam $ head msgWords) (parseParam $ msgWords !! 3)
+    else if "LEAVE_CHATROOM" `isPrefixOf` msg then
+        handleLeave conn (read $ parseParam $ head msgWords) (parseParam $ msgWords !! 1) (parseParam $ msgWords !! 2)
+    else if "DISCONNECT" `isPrefixOf` msg then
+        handleDisconect conn (parseParam $ msgWords !! 2)
+    else if "CHAT:" `isPrefixOf` msg then
+        handleChat (read $ parseParam $ head msgWords) (parseParam $ msgWords !! 2) (parseParam $ msgWords !! 3)
+    else
+        liftIO $ putStrLn "Unknown request"
 
 parseParam :: String -> String
 parseParam str = splitStr !! 1

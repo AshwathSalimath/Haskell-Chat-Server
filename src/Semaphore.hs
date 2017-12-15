@@ -1,3 +1,7 @@
+{-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+
+
 module Semaphore where
 
 import Control.Concurrent.MVar

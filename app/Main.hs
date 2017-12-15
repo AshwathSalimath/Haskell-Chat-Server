@@ -1,21 +1,22 @@
+{-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+
+
 module Main where
 
-import Network.Socket
-import System.IO
-import System.Environment
+import Server
+import Network
 import Control.Exception
-import Control.Monad.Fix (fix)
-import Control.Concurrent.ParallelIO.Local
-import Control.Concurrent.MVar
-import Control.Concurrent
-import Data.List
-import Data.List.Split
-import qualified Data.HashTable.IO as H
-import Control.Monad (when, unless)
+import System.Environment
 
-import Client
-import Types
 
+main :: IO ()
+main = withSocketsDo $ do
+    args <- getArgs
+    startServer $ head args
+
+
+{-
 main :: IO ()
 main = do
     [port] <- getArgs
@@ -74,4 +75,5 @@ runConn (sock, addr) originalSocket port chan clients chatrooms = do
     handle (\(SomeException _) -> return ()) $ fix $ (\loop -> (loopConn hdl originalSocket port chan clients chatrooms []))
     -- shutdown sock ShutdownBoth
     hClose hdl
-    hlog "Client disconnected"
+    hlog "Client disconnected"-}
+
