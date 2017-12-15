@@ -16,22 +16,35 @@ import Foreign.C.Types
 import Foreign.Marshal.Alloc (mallocBytes, free)
 import qualified Data.HashTable.IO as H
 
-type HashTable k v = H.CuckooHashTable k v
+data User = User
+    { _userID :: Int
+    , _userNickName :: String
+    , _userConn :: Socket
+    }
 
-data Client    = Client { clientName :: String
-                        , subs       :: HashTable Int (Chan String)
-                        , joinId     :: Int
-                        }
-data Clients   = Clients { lastClientId   :: Int
-                         , theClients     :: HashTable Int Client
-                         , clientsNames   :: HashTable String Int
-                         }
-data ChatRoom  = ChatRoom Int (Chan String)
-data ChatRooms = ChatRooms { chatRoomFromId     :: HashTable Int ChatRoom
-                           , chatRoomIdFromName :: HashTable String Int
-                           , numberOfChatRooms  :: Int
-                           }
+data Channel = Channel
+    { _channelID :: Int
+    , _channelName :: String
+    , _channelUsers :: [String]
+    }
 
+data ServerEnvr = ServerEnvr
+    { _serverHost :: HostName
+    , _serverPort :: String
+    , _serverSock :: Socket
+    , _serverSem :: Semaphore
+    , _serverChannels :: MVar (Map Int Channel)
+    , _serverUsers :: MVar (Map String User)
+    }
+
+makeLenses ''User
+makeLenses ''Channel
+makeLenses ''ServerEnvr
+
+type Server = StateT ServerEnvr IO
+
+maxConnections :: Int
+maxConnections = 150
 
 sendResponse :: Handle -> String -> IO ()
 sendResponse hdl resp = do
