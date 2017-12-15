@@ -66,6 +66,7 @@ loopConn hdl originalSocket port chan clients chatrooms joinIds = do
             loopConn hdl originalSocket port chan clients chatrooms joinIds
 
 
+
 runConn :: (Socket, SockAddr) -> Socket -> String -> Chan Bool -> MVar Clients -> MVar ChatRooms -> IO ()
 runConn (sock, addr) originalSocket port chan clients chatrooms = do
     hdl <- socketToHandle sock ReadWriteMode

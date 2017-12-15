@@ -20,7 +20,7 @@ library
   default-language:    Haskell2010
 
 
-executable Haskell-Chat-Server-exe
+executable haskell-chat-server-exe
   hs-source-dirs:      app
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N

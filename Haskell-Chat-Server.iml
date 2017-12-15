@@ -7,5 +7,7 @@
     </content>
     <orderEntry type="jdk" jdkName="Haskell" jdkType="Haskell SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="R User Library" level="project" />
+    <orderEntry type="library" name="R Skeletons" level="application" />
   </component>
 </module>
